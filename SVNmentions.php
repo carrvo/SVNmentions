@@ -1,4 +1,3 @@
-!/usr/bin/php
 <?php
 // Temporary files
 
@@ -92,7 +91,7 @@ function convertToSVNPath(string $location_path): string
         senderError("Target domain is not acceptable, must be in: $issuer");
     }
     $svn_path = preg_replace('/'.preg_quote($SVNLocationPath, '/').'/', $SVNParentPath, $location_path);
-    $svn_path = preg_replace('/#.*$/').'/', '', $location_path); // remove fragment identifier
+    $svn_path = preg_replace('/#.*$/', '', $location_path); // remove fragment identifier
     $parent_pos = strrpos($svn_path, '/', 1); // exclude final slash (/) if child is folder
     if ($parent_pos === false) {
         senderError('Target path is not acceptable');
@@ -133,7 +132,7 @@ function initCurl(string $url)
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($curl, CURLOPT_MAXREDIRS, 8);
-    curl_setopt($curl, CURLOPT_TIMEOUT_MS, round(MINTOKEN_CURL_TIMEOUT * 1000));
+    curl_setopt($curl, CURLOPT_TIMEOUT_MS, round(4 * 1000));
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, 2000);
     curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
     return $curl;
@@ -143,13 +142,13 @@ function insertEmbed(Dom\DOMElement $parent, array $embed): void
 {
     $el = $parent->ownerDocument->createElement($embed['tagname']);
     foreach ($embed['attributes'] as $name => $value) {
-        $el.setAttribute($name, $value);
+        $el->setAttribute($name, $value);
     }
-    $el.textContent = $embed['innerHTML'];
+    $el->textContent = $embed['innerHTML'];
     $parent->append($el);
 }
 
-function getEmbed(string $sourceURI, string $targetURI): string
+function getEmbed(string $sourceURI, string $targetURI): array
 {
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
@@ -159,7 +158,7 @@ function getEmbed(string $sourceURI, string $targetURI): string
     //if ($dom->body === null) {
     //    senderError("Could not parse HTML from: $sourceURI");
     //}
-    if (preg_match("/$targetURI/", $body)) {
+    if (preg_match("/($targetURI)/", $body) !== 1) {
         //return "<iframe src=\"$sourceURI\"></iframe>";
         return [
             'tagname' => 'iframe',
@@ -219,7 +218,7 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     }
     $new_comment = true;
     foreach ($comment_section as $comment) {
-        if (strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) {
+        if (strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
             $new_comment = false;
             break;
         }
@@ -293,17 +292,17 @@ function receiveWebMention(string $sourceURI, string $targetURI)
 
 // parsing request
 
-if ($_SERVER['REQUEST_METHOD' !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     senderError('Must send as POST!', '');
 }
-$source = $_POST['source'];
-if (isset($source) === false) {
+if (isset($_POST['source']) === false) {
     senderError('Missing source field!', '');
 }
-$target = $_POST['target'];
-if (isset($target) === false) {
+$source = $_POST['source'];
+if (isset($_POST['target']) === false) {
     senderError('Missing target field!', '');
 }
+$target = $_POST['target'];
 
 $issuer = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'];
 $context = json_decode(getenv('CONTEXT'), true);
