@@ -246,12 +246,7 @@ function getEmbed(string $sourceURI, string $targetURI): array
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
     $body = curl_exec($curl);
     curl_close($curl);
-    //$dom = Dom\HTMLDocument::createFromString($body);
-    //if ($dom->body === null) {
-    //    senderError("Could not parse HTML from: $sourceURI");
-    //}
     if (preg_match('/('.preg_quote($targetURI, '/').')/', preg_quote($body, '/')) !== 1) {
-        //return "<iframe src=\"$sourceURI\"></iframe>";
         return [
             'tagname' => 'iframe',
             'attributes' => [
@@ -263,40 +258,8 @@ function getEmbed(string $sourceURI, string $targetURI): array
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
-/*
-function getEmbed(string $sourceURI, string $targetURI): string
-{
-    $mf = Mf2\fetch($sourceURI);
-    if ($mf === null) {
-        senderError("Could not parse HTML from: $sourceURI");
-    }
-    /*
-    foreach ($mf['rel-urls'] as $relurl => $data) {
-        if (strcmp($relurl, $targetURI) === 0) {
-            return "<iframe src=\"$sourceURI\"></iframe>";
-        }
-    }
-    * /
-    foreach ($mf['items'] as $mfTopItem) {
-        $mfFlat = BarnabyWalters\Mf2\flattenMicroformats($mfTopItem);
-        foreach ($mfFlat as $mfSubItem) {
-            if (in_array('h-entry', $mfitem['type']) &&
-                    BarnabyWalters\Mf2\hasProp($mfSubItem, 'u-in-reply-to') &&
-                    strcmp(BarnabyWalters\Mf2\getPlaintext($mfSubItem, 'u-in-reply-to'), $sourceURI) === 0) {
-                return "<iframe src=\"$sourceURI\"></iframe>";
-            }
-        }
-    }
-    senderError("Source `$sourceURI` did not mention target `$targetURI`");
-}
-*/
-
 function updateContent(string $filesystem_path, array $comment_embed): void
 {
-    //$options = array();
-    //$htmlparser = new Masterminds\HTML5($options);
-    //$dom = $htmlparser->loadHTMLFile($filesystem_path);
-    //$dom = Dom\HTMLDocument::createFromFile($filesystem_path);
     $dom = new DOMDocument();
     $dom->loadHTMLFile($filesystem_path);
     $webmention_section = $dom->getElementById('webmentions');
@@ -320,7 +283,6 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     if ($new_comment) {
         insertEmbed($comment_section, $comment_embed);
     }
-    //$htmlparser->save($dom, $filesystem_path);
     $dom->saveHtmlFile($filesystem_path);
 }
 
