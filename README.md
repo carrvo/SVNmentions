@@ -9,7 +9,7 @@ by adding a [webmentions](https://www.w3.org/TR/webmention/) receiver that can u
 - [Apache HTTPd](https://httpd.apache.org/)
 - [mod_dav_svn](https://svnbook.red-bean.com/en/1.7/svn.ref.mod_dav_svn.conf.html)
 - [PHP](https://www.php.net/)
-- [php5-svn](https://www.php.net/manual/en/book.svn.php)
+- [svn](http://subversion.apache.org/) (TODO: installing bindings [php5-svn](https://www.php.net/manual/en/book.svn.php)/[PECL svn](https://pecl.php.net/package/svn))
 1. Configure! (Replace `<>` with real values.)
     ```
     <Location </svn>>

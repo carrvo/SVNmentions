@@ -83,6 +83,63 @@ function rrmdir($dir) {
 
 // SVN
 // see https://www.php.net/manual/en/book.svn.php
+// see http://subversion.apache.org/
+// see https://svnbook.red-bean.com/en/1.7/index.html
+
+if (!function_exists('svn_checkout')) {
+    function  svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
+    {
+        $cmd = "svn checkout '$repos' '$targetpath'";
+        $output = null;
+        $retval = null;
+        $cmd_ran = exec($cmd, $output, $retval);
+        if ($cmd_ran === false) {
+            receiverError('', 'SVN checkout failed to run');
+        }
+        if ($retval !== 0) {
+            receiverError('', "SVN checkout returned with status: $retval");
+        }
+        return true;
+    }
+}
+
+if (!function_exists('svn_commit')) {
+    function svn_commit(string $log, array $targets, bool $recursive = true): array
+    {
+        $commit_list = tempnam(null, 'svn-targets_');
+        if ($commit_list === false) {
+            receiverError('', 'Failed to create temporary file');
+        }
+        $commit_handle = fopen($commit_list);
+        foreach ($targets as $target) {
+            fwrite($commit_handle, $target);
+        }
+        fclose($commit_handle);
+
+        $cmd = "svn commit --user 'SVNmention' -m '$log' --targets '$commit_list'";
+        $output = null;
+        $retval = null;
+        $cmd_ran = exec($cmd, $output, $retval);
+        unlink($commit_list);
+        if ($cmd_ran === false) {
+            receiverError('', 'SVN commit failed to run');
+        }
+        if ($retval !== 0) {
+            receiverError('', "SVN commit returned with status: $retval");
+        }
+        return [
+            -1,
+            '',
+            'SVNmention',
+        ];
+    }
+}
+
+if (!function_exists('svn_auth_set_parameter')) {
+    function svn_auth_set_parameter(string $key, string $value): void
+    {
+    }
+}
 
 function convertToSVNPath(string $location_path): string
 {
