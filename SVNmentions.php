@@ -89,7 +89,7 @@ function rrmdir($dir) {
 if (!function_exists('svn_checkout')) {
     function  svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
     {
-        $cmd = "svn checkout '$repos' '$targetpath'";
+        $cmd = "svn checkout --depth empty '$repos' '$targetpath'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -100,6 +100,23 @@ if (!function_exists('svn_checkout')) {
             receiverError('', "SVN checkout returned with status: $retval");
         }
         return true;
+    }
+}
+
+if (!function_exists('svn_update')) {
+    function svn_update(string $path, int $revno = -1, bool $recurse = true): int
+    {
+        $cmd = "svn update '$path'";
+        $output = null;
+        $retval = null;
+        $cmd_ran = exec($cmd, $output, $retval);
+        if ($cmd_ran === false) {
+            receiverError('', 'SVN update failed to run');
+        }
+        if ($retval !== 0) {
+            receiverError('', "SVN update returned with status: $retval");
+        }
+        return -1;
     }
 }
 
@@ -141,30 +158,38 @@ if (!function_exists('svn_auth_set_parameter')) {
     }
 }
 
-function convertToSVNPath(string $location_path): string
+function convertToSVNPath(string $location_path): array
 {
     global $issuer, $SVNParentPath, $SVNLocationPath;
     if (str_starts_with($location_path, $issuer) !== true) {
         senderError("Target domain is not acceptable, must be in: $issuer");
     }
+    $location_path = substr($location_path, strlen($issuer));
     $svn_path = preg_replace('/'.preg_quote($SVNLocationPath, '/').'/', $SVNParentPath, $location_path);
-    $svn_path = preg_replace('/#.*$/', '', $location_path); // remove fragment identifier
+    $svn_path = preg_replace('/#.*$/', '', $svn_path); // remove fragment identifier
     $parent_pos = strrpos($svn_path, '/', 1); // exclude final slash (/) if child is folder
     if ($parent_pos === false) {
         senderError('Target path is not acceptable');
     }
+    $svn_name = substr($svn_path, $parent_pos);
     $svn_path = substr($svn_path, 0, $parent_pos);
-    return $svn_path;
+    return [
+        'parent' => $svn_path,
+        'name' => $svn_name,
+    ];
 }
 
-function checkoutContent(string $svn_path, string $temp_path): string
+function checkoutContent(array $svn_path, string $temp_path): string
 {
-    // probably need to split $svn_path so that checkout parent empty and update to include child
-    // probably need to determine checkout path in that the leaf handed to svn_checkout is at $temp_path, not below
-    if (svn_checkout("file://$svn_path", $temp_path) !== true) {
-        receiverError('', "Failed to checkout $svn_path");
+    $parent = $svn_path['parent'];
+    $working_copy = $temp_path.'/'.$svn_path['name'];
+    if (svn_checkout("file://$parent", $temp_path) !== true) {
+        receiverError('', "Failed to checkout $parent");
     }
-    return $temp_path;
+    if (svn_update($working_copy) === false) {
+        receiverError('', "Failed to update to $working_copy");
+    }
+    return $working_copy;
 }
 
 function commitContent(string $modified_path): void
@@ -215,7 +240,7 @@ function getEmbed(string $sourceURI, string $targetURI): array
     //if ($dom->body === null) {
     //    senderError("Could not parse HTML from: $sourceURI");
     //}
-    if (preg_match("/($targetURI)/", $body) !== 1) {
+    if (preg_match('/('.preg_quote($targetURI, '/').')/', preg_quote($body, '/')) !== 1) {
         //return "<iframe src=\"$sourceURI\"></iframe>";
         return [
             'tagname' => 'iframe',
