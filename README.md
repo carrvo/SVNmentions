@@ -42,6 +42,10 @@ These endpoints *must* be within an SVN repository and *must* reside on the same
 </div>
 ```
 
+## Testing
+
+Tested with [webmention-testpinger](https://github.com/voxpelli/node-webmention-testpinger).
+
 ## License
 
 Copyright 2024 by carrvo

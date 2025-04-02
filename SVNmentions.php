@@ -89,7 +89,7 @@ function rrmdir($dir) {
 if (!function_exists('svn_checkout')) {
     function  svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
     {
-        $cmd = "svn checkout --depth empty '$repos' '$targetpath'";
+        $cmd = "svn checkout --non-interactive --depth empty '$repos' '$targetpath'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -106,7 +106,7 @@ if (!function_exists('svn_checkout')) {
 if (!function_exists('svn_update')) {
     function svn_update(string $path, int $revno = -1, bool $recurse = true): int
     {
-        $cmd = "svn update '$path'";
+        $cmd = "svn update --non-interactive --accept theirs-conflict '$path'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -121,7 +121,7 @@ if (!function_exists('svn_update')) {
 }
 
 if (!function_exists('svn_commit')) {
-    function svn_commit(string $log, array $targets, bool $recursive = true): array
+    function svn_commit(string $log, array $targets, bool $recursive = true): array|bool
     {
         $commit_list = tempnam(null, 'svn-targets_');
         if ($commit_list === false) {
@@ -133,7 +133,7 @@ if (!function_exists('svn_commit')) {
         }
         fclose($commit_handle);
 
-        $cmd = "svn commit --username 'SVNmention' -m '$log' --targets '$commit_list'";
+        $cmd = "svn commit --non-interactive --username 'SVNmention' -m '$log' --targets '$commit_list'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -142,7 +142,8 @@ if (!function_exists('svn_commit')) {
             receiverError('', 'SVN commit failed to run');
         }
         if ($retval !== 0) {
-            receiverError('', "SVN commit returned with status: $retval");
+            error_log("[SVNmentions:info] SVN commit returned with status: $retval");
+            return false;
         }
         return [
             -1,
@@ -198,7 +199,14 @@ function commitContent(string $modified_path): void
     svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, 'SVNmention');
     $result = svn_commit('SVNmention received', array($modified_path));
     if ($result === false) {
-        receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
+        error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
+        if (svn_update($modified_path) === false) {
+            receiverError('Failed to add webmention', "Failed to retry: $modified_path");
+        }
+        $result = svn_commit('SVNmention received', array($modified_path));
+        if ($result === false) {
+            receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
+        }
     }
 }
 
