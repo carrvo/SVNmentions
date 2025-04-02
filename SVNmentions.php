@@ -127,13 +127,13 @@ if (!function_exists('svn_commit')) {
         if ($commit_list === false) {
             receiverError('', 'Failed to create temporary file');
         }
-        $commit_handle = fopen($commit_list);
+        $commit_handle = fopen($commit_list, "w");
         foreach ($targets as $target) {
             fwrite($commit_handle, $target);
         }
         fclose($commit_handle);
 
-        $cmd = "svn commit --user 'SVNmention' -m '$log' --targets '$commit_list'";
+        $cmd = "svn commit --username 'SVNmention' -m '$log' --targets '$commit_list'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -156,6 +156,7 @@ if (!function_exists('svn_auth_set_parameter')) {
     function svn_auth_set_parameter(string $key, string $value): void
     {
     }
+    define('SVN_AUTH_PARAM_DEFAULT_USERNAME', '');
 }
 
 function convertToSVNPath(string $location_path): array
@@ -202,6 +203,7 @@ function commitContent(string $modified_path): void
 }
 
 // HTML
+// see https://www.php.net/manual/en/class.domdocument.php
 // see https://www.php.net/manual/en/class.dom-htmldocument.php
 // see https://github.com/microformats/php-mf2
 // see https://github.com/Masterminds/html5-php
@@ -220,7 +222,7 @@ function initCurl(string $url)
     return $curl;
 }
 
-function insertEmbed(Dom\DOMElement $parent, array $embed): void
+function insertEmbed($parent, array $embed): void
 {
     $el = $parent->ownerDocument->createElement($embed['tagname']);
     foreach ($embed['attributes'] as $name => $value) {
@@ -286,7 +288,9 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     //$options = array();
     //$htmlparser = new Masterminds\HTML5($options);
     //$dom = $htmlparser->loadHTMLFile($filesystem_path);
-    $dom = Dom\HTMLDocument::createFromFile($filesystem_path);
+    //$dom = Dom\HTMLDocument::createFromFile($filesystem_path);
+    $dom = new DOMDocument();
+    $dom->loadHTMLFile($filesystem_path);
     $webmention_section = $dom->getElementById('webmentions');
     if ($webmention_section === null) {
         receiverError('Target document is missing tag for webmentions!');
@@ -299,7 +303,7 @@ function updateContent(string $filesystem_path, array $comment_embed): void
         receiverError('Target document does not have comments under webmentions!');
     }
     $new_comment = true;
-    foreach ($comment_section as $comment) {
+    foreach ($comment_section->childNodes as $comment) {
         if (strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
             $new_comment = false;
             break;

@@ -36,6 +36,12 @@ These endpoints *must* be within an SVN repository and *must* reside on the same
 <link rel="webmention" href="https://example.com/SVNmentions" />
 ```
 
+```html
+<div id="webmentions">
+    <div id="webmention-comments" />
+</div>
+```
+
 ## License
 
 Copyright 2024 by carrvo
