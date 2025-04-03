@@ -123,6 +123,7 @@ if (!function_exists('svn_update')) {
 if (!function_exists('svn_commit')) {
     function svn_commit(string $log, array $targets, bool $recursive = true): array|bool
     {
+        global $mentions_user
         $commit_list = tempnam(null, 'svn-targets_');
         if ($commit_list === false) {
             receiverError('', 'Failed to create temporary file');
@@ -133,7 +134,7 @@ if (!function_exists('svn_commit')) {
         }
         fclose($commit_handle);
 
-        $cmd = "svn commit --non-interactive --username 'SVNmention' -m '$log' --targets '$commit_list'";
+        $cmd = "svn commit --non-interactive --username '$mentions_user' -m '$log' --targets '$commit_list'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
@@ -148,7 +149,7 @@ if (!function_exists('svn_commit')) {
         return [
             -1,
             '',
-            'SVNmention',
+            $mentions_user,
         ];
     }
 }
@@ -196,14 +197,15 @@ function checkoutContent(array $svn_path, string $temp_path): string
 
 function commitContent(string $modified_path): void
 {
-    svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, 'SVNmention');
-    $result = svn_commit('SVNmention received', array($modified_path));
+    global $mentions_user, $mentions_commit
+    svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $mentions_user);
+    $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
         error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
         if (svn_update($modified_path) === false) {
             receiverError('Failed to add webmention', "Failed to retry: $modified_path");
         }
-        $result = svn_commit('SVNmention received', array($modified_path));
+        $result = svn_commit($mentions_commit, array($modified_path));
         if ($result === false) {
             receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
         }
@@ -369,6 +371,14 @@ if (isset($SVNParentPath) === false) {
 $SVNLocationPath = $context['SVNLocationPath'];
 if (isset($SVNLocationPath) === false) {
     receiverError('Misconfigured endpoint!', 'Misconfigured endpoint: missing SVNLocationPath');
+}
+$mentions_user = getenv('WebmentionUsername');
+if (isset($mentions_user) === false) {
+    $mentions_user = 'SVNmention';
+}
+$mentions_commit = getenv('WebmentionsCommitMessage');
+if (isset($mentions_commit) === false) {
+    $mentions_commit = 'SVNmention received';
 }
 
 receiveWebMention($source, $target);

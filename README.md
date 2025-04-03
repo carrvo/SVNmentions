@@ -34,6 +34,10 @@ Note that SVNmentions obtains direct access to the SVN repository and bypasses a
     - `SVNParentPath` - filesystem path to parent directory of repository - this matches the `SVNParentPath` directive
     - `SVNLocationPath` - webspace path that is parent to the repository - this matches the `Location` directive
 
+### Apache Configuration Optional
+- `SetEnv WebmentionUsername` - the username that will be used during the content update to commit to the repository
+- `SetEnv WebmentionsCommitMessage` - the commit message used during the content update to commit to the repository
+
 ### Supporting Endpoints Must Include
 These endpoints *must* be within an SVN repository and *must* reside on the same domain as the webmention endpoint.
 ```html
