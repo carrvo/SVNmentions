@@ -77,6 +77,23 @@ function rrmdir($dir): void
     }
 }
 
+function acquireSystemLock()
+{
+    $lock_file = fopen(__FILE__, "r");
+    if (flock($lock_file, LOCK_EX)) {
+        return $lock_file;
+    }
+    else {
+        receiverError('Failed to acquire lock - please try again later.');
+    }
+}
+
+function releaseSystemLock($lock_file): void
+{
+    flock($lock_file, LOCK_UN);
+    fclose($lock_file);
+}
+
 // SVN
 // see https://www.php.net/manual/en/book.svn.php
 // see http://subversion.apache.org/
@@ -350,6 +367,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         if ($temp_path === false) {
             receiverError('', 'Failed to create temporary directory.');
         }
+        $system_lock = acquireSystemLock();
         $checkout_path = checkoutContent($svn_path, $temp_path);
         updateContent($checkout_path, $source_embed);
         commitContent($checkout_path);
@@ -357,6 +375,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         receiverError('', 'Exception was thrown: ' . $ex->getMessage());
     } finally {
         rrmdir($temp_path);
+        releaseSystemLock($system_lock);
     }
 }
 
