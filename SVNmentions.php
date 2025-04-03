@@ -123,7 +123,7 @@ if (!function_exists('svn_update')) {
 if (!function_exists('svn_commit')) {
     function svn_commit(string $log, array $targets, bool $recursive = true): array|bool
     {
-        global $mentions_user
+        global $mentions_user;
         $commit_list = tempnam(null, 'svn-targets_');
         if ($commit_list === false) {
             receiverError('', 'Failed to create temporary file');
@@ -197,7 +197,7 @@ function checkoutContent(array $svn_path, string $temp_path): string
 
 function commitContent(string $modified_path): void
 {
-    global $mentions_user, $mentions_commit
+    global $mentions_user, $mentions_commit;
     svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $mentions_user);
     $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
