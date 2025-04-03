@@ -83,6 +83,10 @@ function rrmdir($dir): void
 // see https://svnbook.red-bean.com/en/1.7/index.html
 
 if (!function_exists('svn_checkout')) {
+    /**
+     * https://www.php.net/manual/en/function.svn-checkout.php
+     * Fallback to shell
+     */
     function svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
     {
         $cmd = "svn checkout --non-interactive --depth empty '$repos' '$targetpath'";
@@ -90,33 +94,45 @@ if (!function_exists('svn_checkout')) {
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
         if ($cmd_ran === false) {
-            receiverError('', 'SVN checkout failed to run');
+            error_log('[SVNmentions:info] SVN checkout failed to run');
+            return false;
         }
         if ($retval !== 0) {
-            receiverError('', "SVN checkout returned with status: $retval");
+            error_log("[SVNmentions:info] SVN checkout returned with status: $retval");
+            return false;
         }
         return true;
     }
 }
 
 if (!function_exists('svn_update')) {
-    function svn_update(string $path, int $revno = -1, bool $recurse = true): int
+    /**
+     * https://www.php.net/manual/en/function.svn-update.php
+     * Fallback to shell
+     */
+    function svn_update(string $path, int $revno = -1, bool $recurse = true): int|bool
     {
         $cmd = "svn update --non-interactive --accept theirs-conflict '$path'";
         $output = null;
         $retval = null;
         $cmd_ran = exec($cmd, $output, $retval);
         if ($cmd_ran === false) {
-            receiverError('', 'SVN update failed to run');
+            error_log('[SVNmentions:info] SVN update failed to run');
+            return false;
         }
         if ($retval !== 0) {
-            receiverError('', "SVN update returned with status: $retval");
+            error_log("[SVNmentions:info] SVN update returned with status: $retval");
+            return false;
         }
         return -1;
     }
 }
 
 if (!function_exists('svn_commit')) {
+    /**
+     * https://www.php.net/manual/en/function.svn-commit.php
+     * Fallback to shell
+     */
     function svn_commit(string $log, array $targets, bool $recursive = true): array|bool
     {
         global $mentions_user;
@@ -136,7 +152,8 @@ if (!function_exists('svn_commit')) {
         $cmd_ran = exec($cmd, $output, $retval);
         unlink($commit_list);
         if ($cmd_ran === false) {
-            receiverError('', 'SVN commit failed to run');
+            error_log('[SVNmentions:info] SVN commit failed to run');
+            return false;
         }
         if ($retval !== 0) {
             error_log("[SVNmentions:info] SVN commit returned with status: $retval");
@@ -185,7 +202,7 @@ function checkoutContent(array $svn_path, string $temp_path): string
     if (svn_checkout("file://$parent", $temp_path) !== true) {
         receiverError('', "Failed to checkout $parent");
     }
-    if (svn_update($working_copy) === -1) {
+    if (svn_update($working_copy) === false) {
         receiverError('', "Failed to update to $working_copy");
     }
     return $working_copy;
@@ -198,7 +215,7 @@ function commitContent(string $modified_path): void
     $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
         error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
-        if (svn_update($modified_path) === -1) {
+        if (svn_update($modified_path) === false) {
             receiverError('Failed to add webmention', "Failed to retry: $modified_path");
         }
         $result = svn_commit($mentions_commit, array($modified_path));
