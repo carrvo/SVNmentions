@@ -231,14 +231,7 @@ function commitContent(string $modified_path): void
     svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $mentions_user);
     $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
-        error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
-        if (svn_update($modified_path) === false) {
-            receiverError('Failed to add webmention', "Failed to retry: $modified_path");
-        }
-        $result = svn_commit($mentions_commit, array($modified_path));
-        if ($result === false) {
-            receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
-        }
+        receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
     }
 }
 
