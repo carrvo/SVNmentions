@@ -52,6 +52,17 @@ These endpoints *must* be within an SVN repository and *must* reside on the same
 </div>
 ```
 
+### Supporting Endpoints Minimal Recommended Style
+
+```html
+<style>
+#webmention-comments iframe {
+	display: block;
+	width: 80%;
+}
+</style>
+```
+
 ## Testing
 
 Tested with [webmention-testpinger](https://github.com/voxpelli/node-webmention-testpinger).
