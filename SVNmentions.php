@@ -22,11 +22,10 @@
  *     endless loops).
  * @return string|bool Full path to newly-created dir, or false on failure.
  */
-function tempdir($dir = null, $prefix = 'tmp_', $mode = 0700, $maxAttempts = 1000)
+function tempdir($dir = null, $prefix = 'tmp_', $mode = 0700, $maxAttempts = 1000): bool|string
 {
     /* Use the system temp dir by default. */
-    if (is_null($dir))
-    {
+    if (is_null($dir)) {
         $dir = sys_get_temp_dir();
     }
 
@@ -36,14 +35,12 @@ function tempdir($dir = null, $prefix = 'tmp_', $mode = 0700, $maxAttempts = 100
     /* If we don't have permission to create a directory, fail, otherwise we will
      * be stuck in an endless loop.
      */
-    if (!is_dir($dir) || !is_writable($dir))
-    {
+    if (!is_dir($dir) || !is_writable($dir)) {
         return false;
     }
 
     /* Make sure characters in prefix are safe. */
-    if (strpbrk($prefix, '\\/:*?"<>|') !== false)
-    {
+    if (strpbrk($prefix, '\\/:*?"<>|') !== false) {
         return false;
     }
 
@@ -52,8 +49,7 @@ function tempdir($dir = null, $prefix = 'tmp_', $mode = 0700, $maxAttempts = 100
      * and our loop could otherwise become endless.
      */
     $attempts = 0;
-    do
-    {
+    do {
         $path = sprintf('%s%s%s%s', $dir, DIRECTORY_SEPARATOR, $prefix, mt_rand(100000, mt_getrandmax()));
     } while (
         !mkdir($path, $mode) &&
@@ -66,19 +62,19 @@ function tempdir($dir = null, $prefix = 'tmp_', $mode = 0700, $maxAttempts = 100
 /**
  * Credit to https://stackoverflow.com/a/11614201
  */
-function rrmdir($dir) {
-  if (is_dir($dir)) {
-    $objects = scandir($dir);
-    foreach ($objects as $object) {
-      if ($object != "." && $object != "..") {
-        if (filetype($dir."/".$object) == "dir") 
-           rrmdir($dir."/".$object); 
-        else unlink   ($dir."/".$object);
-      }
+function rrmdir($dir): void
+{
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (filetype($dir . "/" . $object) == "dir")
+                    rrmdir($dir . "/" . $object);
+                else unlink($dir . "/" . $object);
+            }
+        }
+        rmdir($dir);
     }
-    reset($objects);
-    rmdir($dir);
-  }
 }
 
 // SVN
@@ -87,7 +83,7 @@ function rrmdir($dir) {
 // see https://svnbook.red-bean.com/en/1.7/index.html
 
 if (!function_exists('svn_checkout')) {
-    function  svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
+    function svn_checkout(string $repos, string $targetpath, int $revision = null, int $flags = 0): bool
     {
         $cmd = "svn checkout --non-interactive --depth empty '$repos' '$targetpath'";
         $output = null;
@@ -168,7 +164,7 @@ function convertToSVNPath(string $location_path): array
         senderError("Target domain is not acceptable, must be in: $issuer");
     }
     $location_path = substr($location_path, strlen($issuer));
-    $svn_path = preg_replace('/'.preg_quote($SVNLocationPath, '/').'/', $SVNParentPath, $location_path);
+    $svn_path = preg_replace('/' . preg_quote($SVNLocationPath, '/') . '/', $SVNParentPath, $location_path);
     $svn_path = preg_replace('/#.*$/', '', $svn_path); // remove fragment identifier
     $parent_pos = strrpos($svn_path, '/', 1); // exclude final slash (/) if child is folder
     if ($parent_pos === false) {
@@ -185,11 +181,11 @@ function convertToSVNPath(string $location_path): array
 function checkoutContent(array $svn_path, string $temp_path): string
 {
     $parent = $svn_path['parent'];
-    $working_copy = $temp_path.'/'.$svn_path['name'];
+    $working_copy = $temp_path . '/' . $svn_path['name'];
     if (svn_checkout("file://$parent", $temp_path) !== true) {
         receiverError('', "Failed to checkout $parent");
     }
-    if (svn_update($working_copy) === false) {
+    if (svn_update($working_copy) === -1) {
         receiverError('', "Failed to update to $working_copy");
     }
     return $working_copy;
@@ -202,7 +198,7 @@ function commitContent(string $modified_path): void
     $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
         error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
-        if (svn_update($modified_path) === false) {
+        if (svn_update($modified_path) === -1) {
             receiverError('Failed to add webmention', "Failed to retry: $modified_path");
         }
         $result = svn_commit($mentions_commit, array($modified_path));
@@ -219,7 +215,7 @@ function commitContent(string $modified_path): void
 // see https://github.com/Masterminds/html5-php
 // see https://github.com/barnabywalters/php-mf-cleaner
 
-function initCurl(string $url)
+function initCurl(string $url): CurlHandle|false
 {
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $url);
@@ -242,13 +238,13 @@ function insertEmbed($parent, array $embed): void
     $parent->append($el);
 }
 
-function getEmbed(string $sourceURI, string $targetURI): array
+function getEmbed(string $sourceURI, string $targetURI): ?array
 {
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
     $body = curl_exec($curl);
     curl_close($curl);
-    if (preg_match('/('.preg_quote($targetURI, '/').')/', preg_quote($body, '/')) !== 1) {
+    if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', preg_quote($body, '/')) !== 1) {
         return [
             'tagname' => 'iframe',
             'attributes' => [
@@ -312,11 +308,12 @@ function senderError(string $error_message, ?string $log_message = null): void
     header('HTTP/1.1 400 Bad Request');
     header('Content-Type: text/plain;charset=UTF-8');
     if (empty($log_message) === false) {
-        error_log('[SVNmentions:info] '.$log_message);
+        error_log('[SVNmentions:info] ' . $log_message);
     }
     exit($error_message);
 }
 
+/* unused? */
 function synchronousSuccess(): void
 {
     header('HTTP/1.1 200 OK');
@@ -324,7 +321,7 @@ function synchronousSuccess(): void
     exit();
 }
 
-function receiveWebMention(string $sourceURI, string $targetURI)
+function receiveWebMention(string $sourceURI, string $targetURI): void
 {
     try {
         if (strcmp($sourceURI, $targetURI) === 0) {
@@ -340,11 +337,9 @@ function receiveWebMention(string $sourceURI, string $targetURI)
         updateContent($checkout_path, $source_embed);
         commitContent($checkout_path);
     } catch (Exception $ex) {
-        receiverError('', 'Exception was thrown: '.$ex->getMessage());
+        receiverError('', 'Exception was thrown: ' . $ex->getMessage());
     } finally {
-        if (isset($temp_path)) {
-            rrmdir($temp_path);
-        }
+        rrmdir($temp_path);
     }
 }
 
@@ -382,5 +377,3 @@ if (isset($mentions_commit) === false) {
 }
 
 receiveWebMention($source, $target);
-
-?>
