@@ -9,6 +9,8 @@ Note that SVNmentions obtains direct access to the SVN repository and bypasses a
 
 ## Setup
 
+Note: requires PHP 8.3+
+
 1. Run `dependencies.bash` to install dependent Ubuntu packages:
     - [Apache HTTPd](https://httpd.apache.org/)
     - [mod_dav_svn](https://svnbook.red-bean.com/en/1.7/svn.ref.mod_dav_svn.conf.html)
