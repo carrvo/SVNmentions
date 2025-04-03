@@ -275,7 +275,7 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     }
     $new_comment = true;
     foreach ($comment_section->childNodes as $comment) {
-        if (strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
+        if ($comment instanceof DOMElement && strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
             $new_comment = false;
             break;
         }
