@@ -77,6 +77,23 @@ function rrmdir($dir): void
     }
 }
 
+function acquireSystemLock()
+{
+    $lock_file = fopen(__FILE__, "r");
+    if (flock($lock_file, LOCK_EX)) {
+        return $lock_file;
+    }
+    else {
+        receiverError('Failed to acquire lock - please try again later.');
+    }
+}
+
+function releaseSystemLock($lock_file): void
+{
+    flock($lock_file, LOCK_UN);
+    fclose($lock_file);
+}
+
 // SVN
 // see https://www.php.net/manual/en/book.svn.php
 // see http://subversion.apache.org/
@@ -214,14 +231,7 @@ function commitContent(string $modified_path): void
     svn_auth_set_parameter(SVN_AUTH_PARAM_DEFAULT_USERNAME, $mentions_user);
     $result = svn_commit($mentions_commit, array($modified_path));
     if ($result === false) {
-        error_log("[SVNmentions:info] retrying $modified_path by running `svn update`");
-        if (svn_update($modified_path) === false) {
-            receiverError('Failed to add webmention', "Failed to retry: $modified_path");
-        }
-        $result = svn_commit($mentions_commit, array($modified_path));
-        if ($result === false) {
-            receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
-        }
+        receiverError('Failed to add webmention', "Failed to add webmention: $modified_path");
     }
 }
 
@@ -350,6 +360,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         if ($temp_path === false) {
             receiverError('', 'Failed to create temporary directory.');
         }
+        $system_lock = acquireSystemLock();
         $checkout_path = checkoutContent($svn_path, $temp_path);
         updateContent($checkout_path, $source_embed);
         commitContent($checkout_path);
@@ -357,6 +368,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         receiverError('', 'Exception was thrown: ' . $ex->getMessage());
     } finally {
         rrmdir($temp_path);
+        releaseSystemLock($system_lock);
     }
 }
 
