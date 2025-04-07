@@ -270,6 +270,7 @@ function initCurl(string $url): CurlHandle|false
     curl_setopt($curl, CURLOPT_TIMEOUT_MS, round(4 * 1000));
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, 2000);
     curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     curl_setopt($curl, CURLOPT_USERNAME, $client_id);
     return $curl;
 }
