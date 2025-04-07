@@ -303,7 +303,9 @@ function getEmbed(string $sourceURI, string $targetURI): ?array
 function updateContent(string $filesystem_path, array $comment_embed): void
 {
     $dom = new DOMDocument();
+    libxml_use_internal_errors(true); // Credit: https://stackoverflow.com/a/9149241
     $dom->loadHTMLFile($filesystem_path);
+    libxml_use_internal_errors(false);
     $webmention_section = $dom->getElementById('webmentions');
     if ($webmention_section === null) {
         receiverError('Target document is missing tag for webmentions!');
@@ -370,14 +372,16 @@ function authorizeWebMention(string $checkout_path): void
     global $mentions_property, $user, $anonymous;
     if ($mentions_property !== false) {
         $output = svn_propget($checkout_path, $mentions_property);
-        foreach ($output as $authz) {
-	        if (strcmp($user, $authz) === 0) {
-                return;
-	        }
-	        if (strcmp($anonymous, $authz) === 0){
-		        error_log("[SVNmentions:info] $user is granted anonymous access to: $checkout_path");
-		        return;
-	        }
+        if ($output !== false) {
+            foreach ($output as $authz) {
+	            if (strcmp($user, $authz) === 0) {
+                    return;
+	            }
+	            if (strcmp($anonymous, $authz) === 0){
+		            error_log("[SVNmentions:info] $user is granted anonymous access to: $checkout_path");
+		            return;
+	            }
+            }
         }
         error_log("[SVNmentions:info] $user is denied: $checkout_path");
         header('HTTP/1.1 403 Forbidden');
@@ -399,6 +403,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         }
         $system_lock = acquireSystemLock();
         $checkout_path = checkoutContent($svn_path, $temp_path);
+        authorizeWebMention($checkout_path);
         updateContent($checkout_path, $source_embed);
         commitContent($checkout_path);
     } catch (Exception $ex) {
