@@ -261,6 +261,7 @@ function commitContent(string $modified_path): void
 
 function initCurl(string $url): CurlHandle|false
 {
+    global $client_id;
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $url);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -269,6 +270,7 @@ function initCurl(string $url): CurlHandle|false
     curl_setopt($curl, CURLOPT_TIMEOUT_MS, round(4 * 1000));
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, 2000);
     curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
+    curl_setopt($curl, CURLOPT_USERNAME, $client_id);
     return $curl;
 }
 
@@ -429,6 +431,13 @@ if (isset($_POST['target']) === false) {
 $target = $_POST['target'];
 
 $issuer = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'];
+$client_id = getenv('WebmentionsClientID');
+if (isset($client_id)) {
+    $client_id = $issuer . $client_id;
+}
+else {
+    $client_id = $issuer . $_SERVER['REQUEST_URI'];
+}
 $context = json_decode(getenv('CONTEXT'), true);
 $SVNParentPath = $context['SVNParentPath'];
 if (isset($SVNParentPath) === false) {

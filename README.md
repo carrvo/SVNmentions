@@ -42,6 +42,7 @@ Note: requires PHP 8.3+
 - `SetEnv WebmentionsAuthz <svn property>` - the SVN property that you set will act as an allowlist of services that have permission to Webmention the file it is set on - I recommend the value `authz:webmention` (to follow the convention in [svn-auth](https://github.com/carrvo/svn-auth))
     - if the property value has `anonymous`, then all services will have permission
     - the absence of this configuration will act the same as `anonymous`
+- `SetEnv WebmentionsClientID </path/to/client>` - for SVNmentions' client ID to be `https://example.com/path/to/client` (See [Client ID Metadata](https://datatracker.ietf.org/doc/html/draft-parecki-oauth-client-id-metadata-document) for more information)
 
 ### Supporting Endpoints Must Include
 These endpoints *must* be within an SVN repository and *must* reside on the same domain as the webmention endpoint.
