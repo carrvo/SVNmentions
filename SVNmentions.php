@@ -416,11 +416,22 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
     }
 }
 
+function clientMetaData(): void
+{
+    global $issuer, $client_id;
+    header('Content-type: application/json');
+    $meta = [
+	    "issuer" => $issuer,
+	    "application_type" => "web",
+	    "client_id" => $client_id,
+	    "client_uri" => "https://github.com/carrvo/SVNmentions",
+	    "client_name" => "SVNmentions",
+    ];
+    exit(json_encode(array_filter($meta)));
+}
+
 // parsing request
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    senderError('Must send as POST!', '');
-}
 if (isset($_POST['source']) === false) {
     senderError('Missing source field!', '');
 }
@@ -434,9 +445,11 @@ $issuer = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . $_SERVER['HTT
 $client_id = getenv('WebmentionsClientID');
 if (isset($client_id)) {
     $client_id = $issuer . $client_id;
+    $default_metadata = false;
 }
 else {
     $client_id = $issuer . $_SERVER['REQUEST_URI'];
+    $default_metadata = true;
 }
 $context = json_decode(getenv('CONTEXT'), true);
 $SVNParentPath = $context['SVNParentPath'];
@@ -467,4 +480,13 @@ else {
     $user = '';
 }
 
-receiveWebMention($source, $target);
+switch ($_SERVER['REQUEST_METHOD']) {
+    case 'POST':
+        receiveWebMention($source, $target);
+    case 'GET':
+        if ($default_metadata) {
+            clientMetaData();
+        }
+    default:
+        senderError('MUST send as POST!', '');
+}
