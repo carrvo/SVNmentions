@@ -37,8 +37,8 @@ Note: requires PHP 8.3+
     - `SVNLocationPath` - webspace path that is parent to the repository - this matches the `Location` directive
 
 ### Apache Configuration Optional
-- `SetEnv WebmentionUsername` - the username that will be used during the content update to commit to the repository
-- `SetEnv WebmentionsCommitMessage` - the commit message used during the content update to commit to the repository
+- `SetEnv WebmentionUsername <SVNmention>` - the username that will be used during the content update to commit to the repository
+- `SetEnv WebmentionsCommitMessage "<SVNmention received>"` - the commit message used during the content update to commit to the repository
 
 ### Supporting Endpoints Must Include
 These endpoints *must* be within an SVN repository and *must* reside on the same domain as the webmention endpoint.
