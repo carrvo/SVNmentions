@@ -484,10 +484,12 @@ else {
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
         receiveWebMention($source, $target);
+        break;
     case 'GET':
         if ($default_metadata) {
             clientMetaData();
         }
+        break;
     default:
         senderError('MUST send as POST!', '');
 }
