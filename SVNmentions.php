@@ -277,16 +277,12 @@ function initCurl(string $url): CurlHandle|false
 
 function insertEmbed($parent, array $embed): void
 {
-    $el = $parent->ownerDocument->createElement($embed['tagname']);
-    foreach ($embed['attributes'] as $name => $value) {
-        $el->setAttribute($name, $value);
-    }
+    $embed_html = strtr('<div id="<?source:unsafe?>">', $embed['variables']) . $embed['html'] . '</div>';
     $dom = new DOMDocument();
-    $dom->loadHTML($embed['innerHTML']);
+    $dom->loadHTML($embed_html);
     // grab the content (overhead added during load) then convert to destination ownerDocument
     $innerEl = $parent->ownerDocument->importNode($dom->documentElement->firstChild->firstChild);
-    $el->append($innerEl);
-    $parent->append($el);
+    $parent->append($innerEl);
 }
 
 function parseSourceMeta(string $sourceURI, string $targetURI): ?array
@@ -297,11 +293,7 @@ function parseSourceMeta(string $sourceURI, string $targetURI): ?array
     curl_close($curl);
     if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', preg_quote($body, '/')) !== 1) {
         return [
-            'tagname' => 'div',
-            'attributes' => [
-                'id' => $sourceURI,
-            ],
-            'innerHTML' => '',
+            'html' => '',
             'type' => 'default',
             'variables' => [
                 '<?source:unsafe?>' => $sourceURI,
@@ -332,7 +324,7 @@ function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
     else {
         $template = $fallback_value;
     }
-    $meta['innerHTML'] = strtr($template, $meta['variables']);
+    $meta['html'] = strtr($template, $meta['variables']);
     return $dom->getElementById($section_id);
 }
 
@@ -356,7 +348,7 @@ function updateContent(string $filesystem_path, array $source_embed): void
     }
     $new_embed = true;
     foreach ($embed_section->childNodes as $embeds) {
-        if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['attributes']['id']) === 0) {
+        if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['variables']['<?source:unsafe?>']) === 0) {
             $new_embed = false;
             break;
         }
