@@ -312,15 +312,28 @@ function parseSourceMeta(string $sourceURI, string $targetURI): ?array
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
-function getEmbed(DOMDocument $dom, array& $meta)
+function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
 {
+    $property_name = null;
+    $fallback_value = '';
+    $section_id = '';
     switch ($meta['type']) {
         case 'default':
         default:
             // $sourceURI should be safe since this was queried so it must be a legitimate URI
-            $meta['innerHTML'] = strtr('<iframe src="<?source:unsafe?>" />', $meta['variables']);
-            return $dom->getElementById('webmention-comments');
+            $property_name = 'webmention:default';
+            $fallback_value = '<iframe src="<?source:unsafe?>" />';
+            $section_id = 'webmention-comments';
     }
+    $output = svn_propget($filesystem_path, $property_name);
+    if ($output !== false) {
+        $template = implode("\n", $output);
+    }
+    else {
+        $template = $fallback_value;
+    }
+    $meta['innerHTML'] = strtr($template, $meta['variables']);
+    return $dom->getElementById($section_id);
 }
 
 function updateContent(string $filesystem_path, array $source_embed): void
@@ -334,7 +347,7 @@ function updateContent(string $filesystem_path, array $source_embed): void
     if ($webmention_section === null) {
         receiverError('Target document is missing tag for webmentions!');
     }
-    $embed_section = getEmbed($dom, $source_embed);
+    $embed_section = getEmbed($filesystem_path, $dom, $source_embed);
     if ($embed_section === null) {
         receiverError('Target document is missing tag for ' . $source_embed['type'] . '!');
     }
