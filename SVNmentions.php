@@ -281,11 +281,15 @@ function insertEmbed($parent, array $embed): void
     foreach ($embed['attributes'] as $name => $value) {
         $el->setAttribute($name, $value);
     }
-    $el->textContent = $embed['innerHTML'];
+    $dom = new DOMDocument();
+    $dom->loadHTML($embed['innerHTML']);
+    // grab the content (overhead added during load) then convert to destination ownerDocument
+    $innerEl = $parent->ownerDocument->importNode($dom->documentElement->firstChild->firstChild);
+    $el->append($innerEl);
     $parent->append($el);
 }
 
-function getEmbed(string $sourceURI, string $targetURI): ?array
+function parseSourceMeta(string $sourceURI, string $targetURI): ?array
 {
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
@@ -297,11 +301,26 @@ function getEmbed(string $sourceURI, string $targetURI): ?array
             'attributes' => [
                 'id' => $sourceURI,
             ],
-            // $sourceURI should be safe since this was queried so it must be a legitimate URI
-            'innerHTML' => '<iframe src="' . $sourceURI . '" />',
+            'innerHTML' => '',
+            'type' => 'default',
+            'variables' => [
+                '<?source:unsafe?>' => $sourceURI,
+                '<?source?>' => htmlspecialchars($sourceURI),
+            ],
         ];
     }
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
+}
+
+function getEmbed(DOMDocument $dom, array& $meta)
+{
+    switch ($meta['type']) {
+        case 'default':
+        default:
+            // $sourceURI should be safe since this was queried so it must be a legitimate URI
+            $meta['innerHTML'] = strtr('<iframe src="<?source:unsafe?>" />', $meta['variables']);
+            return $dom->getElementById('webmention-comments');
+    }
 }
 
 function updateContent(string $filesystem_path, array $source_embed): void
@@ -314,22 +333,22 @@ function updateContent(string $filesystem_path, array $source_embed): void
     if ($webmention_section === null) {
         receiverError('Target document is missing tag for webmentions!');
     }
-    $comment_section = $dom->getElementById('webmention-comments');
-    if ($comment_section === null) {
-        receiverError('Target document is missing tag for webmention comments!');
+    $embed_section = getEmbed($dom, $source_embed);
+    if ($embed_section === null) {
+        receiverError('Target document is missing tag for ' . $source_embed['type'] . '!');
     }
-    if ($webmention_section->contains($comment_section) !== true) {
-        receiverError('Target document does not have comments under webmentions!');
+    if ($webmention_section->contains($embed_section) !== true) {
+        receiverError('Target document does not have ' . $source_embed['type'] . ' section under webmentions!');
     }
-    $new_comment = true;
-    foreach ($comment_section->childNodes as $comment) {
-        if ($comment instanceof DOMElement && strcmp($comment->getAttribute('id'), $source_embed['attributes']['id']) === 0) {
-            $new_comment = false;
+    $new_embed = true;
+    foreach ($embed_section->childNodes as $embeds) {
+        if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['attributes']['id']) === 0) {
+            $new_embed = false;
             break;
         }
     }
-    if ($new_comment) {
-        insertEmbed($comment_section, $source_embed);
+    if ($new_embed) {
+        insertEmbed($embed_section, $source_embed);
     }
     $dom->saveHtmlFile($filesystem_path);
 }
@@ -399,7 +418,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         if (strcmp($sourceURI, $targetURI) === 0) {
             senderError('Source and target are the same!', '');
         }
-        $source_embed = getEmbed($sourceURI, $targetURI); // also verifies source
+        $source_embed = parseSourceMeta($sourceURI, $targetURI); // also verifies source
         $svn_path = convertToSVNPath($targetURI); // also verifies target
         $temp_path = tempdir(null, 'svnmentions_', 0700, 10);
         if ($temp_path === false) {
