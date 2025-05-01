@@ -281,7 +281,8 @@ function insertEmbed($parent, array $embed): void
     $dom = new DOMDocument();
     $dom->loadHTML($embed_html);
     // grab the content (overhead added during load) then convert to destination ownerDocument
-    $innerEl = $parent->ownerDocument->importNode($dom->documentElement->firstChild->firstChild);
+    // Credit: https://stackoverflow.com/a/34964044
+    $innerEl = $parent->ownerDocument->adoptNode($dom->documentElement->firstChild->firstChild);
     $parent->append($innerEl);
 }
 
