@@ -293,17 +293,18 @@ function getEmbed(string $sourceURI, string $targetURI): ?array
     curl_close($curl);
     if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', preg_quote($body, '/')) !== 1) {
         return [
-            'tagname' => 'iframe',
+            'tagname' => 'div',
             'attributes' => [
-                'src' => $sourceURI, // should be safe since this was queried so it must be a legitimate URI
+                'id' => $sourceURI,
             ],
-            'innerHTML' => '',
+            // $sourceURI should be safe since this was queried so it must be a legitimate URI
+            'innerHTML' => '<iframe src="' . $sourceURI . '" />',
         ];
     }
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
-function updateContent(string $filesystem_path, array $comment_embed): void
+function updateContent(string $filesystem_path, array $source_embed): void
 {
     $dom = new DOMDocument();
     libxml_use_internal_errors(true); // Credit: https://stackoverflow.com/a/9149241
@@ -322,13 +323,13 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     }
     $new_comment = true;
     foreach ($comment_section->childNodes as $comment) {
-        if ($comment instanceof DOMElement && strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
+        if ($comment instanceof DOMElement && strcmp($comment->getAttribute('id'), $source_embed['attributes']['id']) === 0) {
             $new_comment = false;
             break;
         }
     }
     if ($new_comment) {
-        insertEmbed($comment_section, $comment_embed);
+        insertEmbed($comment_section, $source_embed);
     }
     $dom->saveHtmlFile($filesystem_path);
 }
