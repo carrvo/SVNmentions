@@ -3,6 +3,8 @@
 This is an endpoint to compliment [mod_dav_svn](https://svnbook.red-bean.com/en/1.7/svn.ref.mod_dav_svn.conf.html)
 by adding a [webmentions](https://www.w3.org/TR/webmention/) receiver that can update an HTML document within SVN.
 
+This is complimented by a [webmentions sender hook](https://github.com/carrvo/SVNmentions-hook).
+
 ## Security
 
 Note that SVNmentions obtains direct access to the SVN repository and bypasses any Apache-level Authorization that has been set up. This, and its ability to inject HTML into the repository makes it an attack vector. Consider extending with or applying some amount of spam or other filtering to reduce the risk.
