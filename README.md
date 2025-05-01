@@ -67,6 +67,21 @@ These endpoints *must* be within an SVN repository and *must* reside on the same
 </style>
 ```
 
+### Supporting Endpoints Optional
+
+You can customize the embedded HTML by providing templates through SVN properties.
+Note that your template will *always* be wrapped inside a `div` with an `id` attribute.
+
+#### SVN Properties Supported
+- `webmention:default` - default template to use when no other [types](https://indieweb.org/posts#Types_of_Posts) are supported (this will show under `<div id="webmention-comments" />`)
+
+You can use the [commands](https://svnbook.red-bean.com/en/1.7/svn.ref.svn.html) `svn propget`, `svn propset`, and `svn propedit` to inspect and edit.
+Alternatively you can use client features (such as with [TortoiseSVN](https://tortoisesvn.net/)) to inspect and edit.
+
+#### Template Variables Supported
+- `<?source?>` - escaped source URI
+- `<?source:unsafe?>` - raw source URI (this may be safe because it was queried so it must be a legitimate URI)
+
 ## Testing
 
 Tested with [webmention-testpinger](https://github.com/voxpelli/node-webmention-testpinger).

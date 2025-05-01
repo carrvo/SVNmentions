@@ -277,15 +277,16 @@ function initCurl(string $url): CurlHandle|false
 
 function insertEmbed($parent, array $embed): void
 {
-    $el = $parent->ownerDocument->createElement($embed['tagname']);
-    foreach ($embed['attributes'] as $name => $value) {
-        $el->setAttribute($name, $value);
-    }
-    $el->textContent = $embed['innerHTML'];
-    $parent->append($el);
+    $embed_html = strtr('<div id="<?source:unsafe?>">', $embed['variables']) . $embed['html'] . '</div>';
+    $dom = new DOMDocument();
+    $dom->loadHTML($embed_html);
+    // grab the content (overhead added during load) then convert to destination ownerDocument
+    // Credit: https://stackoverflow.com/a/34964044
+    $innerEl = $parent->ownerDocument->adoptNode($dom->documentElement->firstChild->firstChild);
+    $parent->append($innerEl);
 }
 
-function getEmbed(string $sourceURI, string $targetURI): ?array
+function parseSourceMeta(string $sourceURI, string $targetURI): ?array
 {
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
@@ -293,19 +294,45 @@ function getEmbed(string $sourceURI, string $targetURI): ?array
     curl_close($curl);
     if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', preg_quote($body, '/')) !== 1) {
         return [
-            'tagname' => 'iframe',
-            'attributes' => [
-                'src' => $sourceURI, // should be safe since this was queried so it must be a legitimate URI
+            'html' => '',
+            'type' => 'default',
+            'variables' => [
+                '<?source:unsafe?>' => $sourceURI,
+                '<?source?>' => htmlspecialchars($sourceURI),
             ],
-            'innerHTML' => '',
         ];
     }
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
-function updateContent(string $filesystem_path, array $comment_embed): void
+function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
+{
+    $property_name = null;
+    $fallback_value = '';
+    $section_id = '';
+    switch ($meta['type']) {
+        case 'default':
+        default:
+            // $sourceURI should be safe since this was queried so it must be a legitimate URI
+            $property_name = 'webmention:default';
+            $fallback_value = '<a src="<?source:unsafe?>" ><?source?></a><iframe src="<?source:unsafe?>" />';
+            $section_id = 'webmention-comments';
+    }
+    $output = svn_propget($filesystem_path, $property_name);
+    if ($output !== false) {
+        $template = implode("\n", $output);
+    }
+    else {
+        $template = $fallback_value;
+    }
+    $meta['html'] = strtr($template, $meta['variables']);
+    return $dom->getElementById($section_id);
+}
+
+function updateContent(string $filesystem_path, array $source_embed): void
 {
     $dom = new DOMDocument();
+    $dom->formatOutput = true;
     libxml_use_internal_errors(true); // Credit: https://stackoverflow.com/a/9149241
     $dom->loadHTMLFile($filesystem_path);
     libxml_use_internal_errors(false);
@@ -313,22 +340,22 @@ function updateContent(string $filesystem_path, array $comment_embed): void
     if ($webmention_section === null) {
         receiverError('Target document is missing tag for webmentions!');
     }
-    $comment_section = $dom->getElementById('webmention-comments');
-    if ($comment_section === null) {
-        receiverError('Target document is missing tag for webmention comments!');
+    $embed_section = getEmbed($filesystem_path, $dom, $source_embed);
+    if ($embed_section === null) {
+        receiverError('Target document is missing tag for ' . $source_embed['type'] . '!');
     }
-    if ($webmention_section->contains($comment_section) !== true) {
-        receiverError('Target document does not have comments under webmentions!');
+    if ($webmention_section->contains($embed_section) !== true) {
+        receiverError('Target document does not have ' . $source_embed['type'] . ' section under webmentions!');
     }
-    $new_comment = true;
-    foreach ($comment_section->childNodes as $comment) {
-        if ($comment instanceof DOMElement && strcmp($comment->getAttribute('src'), $comment_embed['attributes']['src']) === 0) {
-            $new_comment = false;
+    $new_embed = true;
+    foreach ($embed_section->childNodes as $embeds) {
+        if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['variables']['<?source:unsafe?>']) === 0) {
+            $new_embed = false;
             break;
         }
     }
-    if ($new_comment) {
-        insertEmbed($comment_section, $comment_embed);
+    if ($new_embed) {
+        insertEmbed($embed_section, $source_embed);
     }
     $dom->saveHtmlFile($filesystem_path);
 }
@@ -398,7 +425,7 @@ function receiveWebMention(string $sourceURI, string $targetURI): void
         if (strcmp($sourceURI, $targetURI) === 0) {
             senderError('Source and target are the same!', '');
         }
-        $source_embed = getEmbed($sourceURI, $targetURI); // also verifies source
+        $source_embed = parseSourceMeta($sourceURI, $targetURI); // also verifies source
         $svn_path = convertToSVNPath($targetURI); // also verifies target
         $temp_path = tempdir(null, 'svnmentions_', 0700, 10);
         if ($temp_path === false) {
