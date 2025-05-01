@@ -326,6 +326,7 @@ function getEmbed(DOMDocument $dom, array& $meta)
 function updateContent(string $filesystem_path, array $source_embed): void
 {
     $dom = new DOMDocument();
+    $dom->formatOutput = true;
     libxml_use_internal_errors(true); // Credit: https://stackoverflow.com/a/9149241
     $dom->loadHTMLFile($filesystem_path);
     libxml_use_internal_errors(false);
