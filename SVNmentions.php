@@ -315,7 +315,7 @@ function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
         default:
             // $sourceURI should be safe since this was queried so it must be a legitimate URI
             $property_name = 'webmention:default';
-            $fallback_value = '<iframe src="<?source:unsafe?>" />';
+            $fallback_value = '<a src="<?source:unsafe?>" ><?source?></a><iframe src="<?source:unsafe?>" />';
             $section_id = 'webmention-comments';
     }
     $output = svn_propget($filesystem_path, $property_name);
