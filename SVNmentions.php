@@ -292,7 +292,7 @@ function parseSourceMeta(string $sourceURI, string $targetURI): ?array
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
     $body = curl_exec($curl);
     curl_close($curl);
-    if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', preg_quote($body, '/')) !== 1) {
+    if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', $body) === 1) {
         return [
             'html' => '',
             'type' => 'default',
