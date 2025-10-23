@@ -460,15 +460,6 @@ function clientMetaData(): void
 
 // parsing request
 
-if (isset($_POST['source']) === false) {
-    senderError('Missing source field!', '');
-}
-$source = $_POST['source'];
-if (isset($_POST['target']) === false) {
-    senderError('Missing target field!', '');
-}
-$target = $_POST['target'];
-
 $issuer = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'];
 $client_id = getenv('WebmentionsClientID');
 if (isset($client_id)) {
@@ -510,6 +501,14 @@ else {
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
+        if (isset($_POST['source']) === false) {
+            senderError('Missing source field!', '');
+        }
+        $source = $_POST['source'];
+        if (isset($_POST['target']) === false) {
+            senderError('Missing target field!', '');
+        }
+        $target = $_POST['target'];
         receiveWebMention($source, $target);
         break;
     case 'GET':
