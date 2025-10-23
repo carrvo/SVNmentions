@@ -84,6 +84,18 @@ Alternatively you can use client features (such as with [TortoiseSVN](https://to
 - `<?source?>` - escaped source URI
 - `<?source:unsafe?>` - raw source URI (this may be safe because it was queried so it must be a legitimate URI)
 
+### Non-Standard Webmentions
+
+Alternatively you can receive **non-standard** Webmentions. This is useful for mime-types that *cannot* have the destination embedded into their file content (such as image files).
+
+#### WebDAV
+
+These non-standard Webmentions will be sent with the **additional post fields**:
+- `type=webdav`
+- `property=XXXXXXX` - this property will be verified with a PROPFIND to ensure it references the target (instead of a GET to verify through the content)
+
+For an example sender see the [webmentions sender hook description](https://github.com/carrvo/SVNmentions-hook?tab=readme-ov-file#non-standard-webmentions).
+
 ## Testing
 
 Tested with [webmention-testpinger](https://github.com/voxpelli/node-webmention-testpinger).
