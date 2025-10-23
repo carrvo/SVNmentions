@@ -305,6 +305,27 @@ function parseSourceMeta(string $sourceURI, string $targetURI): ?array
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
+function parseSourceWebDavMeta(string $sourceURI, string $targetURI, array $arguments): ?array
+{
+    $curl = initCurl($sourceURI);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/xml']);
+    curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PROPFIND'); // see http://webdav.org/specs/rfc4918.html#METHOD_PROPFIND
+    $body = curl_exec($curl);
+    curl_close($curl);
+    # TODO: this should handle XML parsing to ensure that it is actually under the $arguments['property']
+    if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', $body) === 1) {
+        return [
+            'html' => '',
+            'type' => 'default',
+            'variables' => [
+                '<?source:unsafe?>' => $sourceURI,
+                '<?source?>' => htmlspecialchars($sourceURI),
+            ],
+        ];
+    }
+    senderError("Source `$sourceURI` did not mention target `$targetURI`");
+}
+
 function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
 {
     $property_name = null;
@@ -419,13 +440,21 @@ function authorizeWebMention(string $checkout_path): void
     }
 }
 
-function receiveWebMention(string $sourceURI, string $targetURI): void
+function receiveWebMention(string $sourceURI, string $targetURI, string $mentions_type): void
 {
     try {
         if (strcmp($sourceURI, $targetURI) === 0) {
             senderError('Source and target are the same!', '');
         }
-        $source_embed = parseSourceMeta($sourceURI, $targetURI); // also verifies source
+        switch ($mentions_type) {
+            case 'webdav':
+                $source_embed = parseSourceWebDavMeta($sourceURI, $targetURI, $_POST); // also verifies source
+                break;
+            case 'standard':
+            default:
+                $source_embed = parseSourceMeta($sourceURI, $targetURI); // also verifies source
+                break;
+        }
         $svn_path = convertToSVNPath($targetURI); // also verifies target
         $temp_path = tempdir(null, 'svnmentions_', 0700, 10);
         if ($temp_path === false) {
@@ -509,7 +538,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
             senderError('Missing target field!', '');
         }
         $target = $_POST['target'];
-        receiveWebMention($source, $target);
+        if (isset($_POST['type'])) {
+            $mentions_type = $_POST['type'];
+        }
+        else {
+            $mentions_type = 'standard';
+        }
+        receiveWebMention($source, $target, $mentions_type);
         break;
     case 'GET':
         if ($default_metadata) {
