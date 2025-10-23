@@ -321,15 +321,17 @@ function parseSourceWebDavMeta(string $sourceURI, string $targetURI, array $argu
         if (preg_match('/(' . preg_quote($arguments['property'], '/') . ')/', $property->nodeName) !== 1) {
             continue;
         }
-        if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', $property->textContent) === 1) {
-            return [
-                'html' => '',
-                'type' => 'default',
-                'variables' => [
-                    '<?source:unsafe?>' => $sourceURI,
-                    '<?source?>' => htmlspecialchars($sourceURI),
-                ],
-            ];
+        foreach (explode("\n", $property->textContent) as $property_target) {
+            if (strcmp($property_target, $targetURI) === 0) {
+                return [
+                    'html' => '',
+                    'type' => 'default',
+                    'variables' => [
+                        '<?source:unsafe?>' => $sourceURI,
+                        '<?source?>' => htmlspecialchars($sourceURI),
+                    ],
+                ];
+            }
         }
         break;
     }
