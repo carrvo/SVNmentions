@@ -312,16 +312,28 @@ function parseSourceWebDavMeta(string $sourceURI, string $targetURI, array $argu
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PROPFIND'); // see http://webdav.org/specs/rfc4918.html#METHOD_PROPFIND
     $body = curl_exec($curl);
     curl_close($curl);
-    # TODO: this should handle XML parsing to ensure that it is actually under the $arguments['property']
-    if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', $body) === 1) {
-        return [
-            'html' => '',
-            'type' => 'default',
-            'variables' => [
-                '<?source:unsafe?>' => $sourceURI,
-                '<?source?>' => htmlspecialchars($sourceURI),
-            ],
-        ];
+    $dom = new DOMDocument();
+    $dom->formatOutput = true;
+    // https://www.php.net/manual/en/libxml.constants.php
+    $dom->loadXML($body); //, LIBXML_HTML_NOIMPLIED | LIBXML_NO_XXE | LIBXML_DTDVALID | LIBXML_PARSEHUGE); // | LIBXML_NONET
+    $properties = $dom->getElementsByTagName('prop')->item(0)->childNodes;
+    foreach ($properties as $property) {
+        if (preg_match('/(' . preg_quote($arguments['property'], '/') . ')/', $property->nodeName) !== 1) {
+            continue;
+        }
+        foreach (explode("\n", $property->textContent) as $property_target) {
+            if (strcmp($property_target, $targetURI) === 0) {
+                return [
+                    'html' => '',
+                    'type' => 'default',
+                    'variables' => [
+                        '<?source:unsafe?>' => $sourceURI,
+                        '<?source?>' => htmlspecialchars($sourceURI),
+                    ],
+                ];
+            }
+        }
+        break;
     }
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
@@ -355,6 +367,7 @@ function updateContent(string $filesystem_path, array $source_embed): void
     $dom = new DOMDocument();
     $dom->formatOutput = true;
     libxml_use_internal_errors(true); // Credit: https://stackoverflow.com/a/9149241
+    // https://www.php.net/manual/en/domdocument.loadhtmlfile.php
     $dom->loadHTMLFile($filesystem_path);
     libxml_use_internal_errors(false);
     $webmention_section = $dom->getElementById('webmentions');
