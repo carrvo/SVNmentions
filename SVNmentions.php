@@ -543,22 +543,67 @@ else {
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
-        if (isset($_POST['source']) === false) {
-            senderError('Missing source field!', '');
+    // Get mention type
+    $mentions_type = $_POST['type'] ?? 'standard';
+
+    // Handle direct anonymous comment
+    if (in_array($mentions_type, ['direct', 'anonymous'])) {
+        if (empty($_POST['content'])) {
+            senderError('Missing content field!', '');
         }
-        $source = $_POST['source'];
+        if (strlen($_POST['content']) > 250) {
+            senderError('Content exceeds 250 characters!', '');
+        }
         if (isset($_POST['target']) === false) {
             senderError('Missing target field!', '');
         }
+
         $target = $_POST['target'];
-        if (isset($_POST['type'])) {
-            $mentions_type = $_POST['type'];
+
+        // Construct fake source for internal processing
+        $source = 'direct-comment-' . time();
+
+        // Generate embed data (no external source)
+        $source_embed = [
+            'html' => '<p>' . htmlspecialchars($_POST['content']) . '</p>',
+            'type' => 'direct',
+            'variables' => [
+                '<?source:unsafe?>' => $source,
+                '<?source?>' => 'Anonymous Comment',
+            ],
+        ];
+
+        // Process as local comment
+        $svn_path = convertToSVNPath($target);
+        $temp_path = tempdir(null, 'svnmentions_', 0700, 10);
+        if ($temp_path === false) {
+            receiverError('', 'Failed to create temporary directory.');
         }
-        else {
-            $mentions_type = 'standard';
-        }
-        receiveWebMention($source, $target, $mentions_type);
-        break;
+        $system_lock = acquireSystemLock();
+        $checkout_path = checkoutContent($svn_path, $temp_path);
+        authorizeWebMention($checkout_path);
+        updateContent($checkout_path, $source_embed);
+        commitContent($checkout_path);
+
+        rrmdir($temp_path);
+        releaseSystemLock($system_lock);
+
+        header('HTTP/1.1 200 OK');
+        echo "Direct comment saved successfully!";
+        exit;
+    }
+
+    // Otherwise handle standard mentions
+    if (isset($_POST['source']) === false) {
+        senderError('Missing source field!', '');
+    }
+    $source = $_POST['source'];
+    if (isset($_POST['target']) === false) {
+        senderError('Missing target field!', '');
+    }
+    $target = $_POST['target'];
+    receiveWebMention($source, $target, $mentions_type);
+    break;
     case 'GET':
         if ($default_metadata) {
             clientMetaData();
