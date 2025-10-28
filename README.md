@@ -76,6 +76,7 @@ Note that your template will *always* be wrapped inside a `div` with an `id` att
 
 #### SVN Properties Supported
 - `webmention:default` - default template to use when no other [types](https://indieweb.org/posts#Types_of_Posts) are supported (this will show under `<div id="webmention-comments" />`)
+- `webmention:local-comment` - template for [local comments](https://indieweb.org/local_comments) (this will show under `<div id="webmention-comments" />`)
 
 You can use the [commands](https://svnbook.red-bean.com/en/1.7/svn.ref.svn.html) `svn propget`, `svn propset`, and `svn propedit` to inspect and edit.
 Alternatively you can use client features (such as with [TortoiseSVN](https://tortoisesvn.net/)) to inspect and edit.
@@ -83,10 +84,32 @@ Alternatively you can use client features (such as with [TortoiseSVN](https://to
 #### Template Variables Supported
 - `<?source?>` - escaped source URI
 - `<?source:unsafe?>` - raw source URI (this may be safe because it was queried so it must be a legitimate URI)
+- `<?content?>` - escaped [local comment](https://indieweb.org/local_comments)
+- `<?content:unsafe?>` - raw [local comment](https://indieweb.org/local_comments)
 
 ### Non-Standard Webmentions
 
 Alternatively you can receive **non-standard** Webmentions. This is useful for mime-types that *cannot* have the destination embedded into their file content (such as image files).
+
+#### Local Comments
+
+[Local comments](https://indieweb.org/local_comments) **do not have a source**.
+However, the pattern for non-standard Webmentions can still be be leveraged by including the **additional post fields**:
+- `type=local-comment`
+- `content=XXXXXXX`
+
+Example HTML for a webpage:
+```html
+<form action="https://example.com/SVNmentions" method="POST">
+    <input type="hidden" name="target" value="http://example.com/webpage.html">
+    <input type="hidden" name="type" value="local-comment">
+    <label for="comment">Comment</label>
+    <br />
+    <textarea id="comment" name="content" rows="4" cols="50"></textarea>
+    <br />
+    <input type="submit" value="Submit">
+</form>
+```
 
 #### WebDAV
 
