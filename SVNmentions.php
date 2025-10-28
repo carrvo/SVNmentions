@@ -313,6 +313,10 @@ function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
 
 function parseLocalCommentMeta(string $targetURI, array $arguments): ?array
 {
+    global $localcomment_limit;
+    if (strlen($arguments['content']) > $localcomment_limit) {
+        senderError("Content exceeds $localcomment_limit characters.");
+    }
     return [
         'html' => '',
         'type' => 'local-comment',
@@ -568,6 +572,13 @@ if (isset($mentions_commit) === false) {
 $mentions_property = getenv('WebmentionsAuthz');
 if (isset($mentions_commit) === false) {
     $mentions_property = false;
+}
+$localcomment_limit = getenv('LocalCommentLimit');
+if ($localcomment_limit === false) {
+    $localcomment_limit = 200;
+}
+else {
+    $localcomment_limit = (int) $localcomment_limit;
 }
 $anonymous = 'anonymous';
 if (isset($_SERVER['PHP_AUTH_USER'])) {
