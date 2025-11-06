@@ -448,7 +448,7 @@ function updateContent(string $filesystem_path, array $source_embed): void
     if ($new_embed) {
         $inject_direction = svn_propget($filesystem_path, 'webmention:inject');
         if ($inject_direction !== false) {
-            $inject_direction = "$inject_direction";
+            $inject_direction = $inject_direction[0];
         }
         else {
             $inject_direction = 'default';
