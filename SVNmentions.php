@@ -272,6 +272,13 @@ function initCurl(string $url): CurlHandle|false
     curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
     curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     curl_setopt($curl, CURLOPT_USERNAME, $client_id);
+
+    $agent = getenv('WebmentionsAgent');
+    if ($agent === false) {
+        $agent = 'SVNmentions (https://github.com/carrvo/SVNmentions) curl/8.5.0';
+    }
+    curl_setopt($curl, CURLOPT_USERAGENT, "$agent");
+
     return $curl;
 }
 

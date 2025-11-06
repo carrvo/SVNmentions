@@ -45,6 +45,7 @@ Note: requires PHP 8.3+
     - if the property value has `anonymous`, then all services will have permission
     - the absence of this configuration will act the same as `anonymous`
 - `SetEnv WebmentionsClientID </path/to/client>` - for SVNmentions' client ID to be `https://example.com/path/to/client` (See [Client ID Metadata](https://datatracker.ietf.org/doc/html/draft-parecki-oauth-client-id-metadata-document) for more information)
+- `SetEnv WebmentionsAgent 'SVNmentions (https://github.com/carrvo/SVNmentions) curl/8.5.0'` - customize the user agent for outgoing requests
 - `SetEnv LocalCommentLimit <int>` - the maximum number of characters accepted
 
 ### Supporting Endpoints Must Include
