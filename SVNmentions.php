@@ -616,7 +616,10 @@ else {
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
-        $source = $_POST['source'];
+        $source = "";
+        if (isset($_POST['source'])) {
+            $source = $_POST['source'];
+        }
 
         if (isset($_POST['target']) === false) {
             senderError('Missing target field!', '');
