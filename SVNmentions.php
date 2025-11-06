@@ -275,7 +275,7 @@ function initCurl(string $url): CurlHandle|false
     return $curl;
 }
 
-function insertEmbed($parent, array $embed): void
+function insertEmbed($parent, array $embed, string $inject_direction): bool
 {
     $embed_html = strtr('<div id="<?source:unsafe?>">', $embed['variables']) . $embed['html'] . '</div>';
     $dom = new DOMDocument();
@@ -283,7 +283,21 @@ function insertEmbed($parent, array $embed): void
     // grab the content (overhead added during load) then convert to destination ownerDocument
     // Credit: https://stackoverflow.com/a/34964044
     $innerEl = $parent->ownerDocument->adoptNode($dom->documentElement->firstChild->firstChild);
-    $parent->append($innerEl);
+    switch ($inject_direction) {
+        case "beginning":
+        case "prepend":
+            $parent->prepend($innerEl);
+            break;
+        case "end":
+        case "append":
+        case "default":
+            $parent->append($innerEl);
+            break;
+        default:
+            $parent->append($innerEl);
+            return false;
+    }
+    return true;
 }
 
 function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
@@ -432,7 +446,16 @@ function updateContent(string $filesystem_path, array $source_embed): void
             }
     }
     if ($new_embed) {
-        insertEmbed($embed_section, $source_embed);
+        $inject_direction = svn_propget($filesystem_path, 'webmention:inject');
+        if ($inject_direction !== false) {
+            $inject_direction = "$inject_direction";
+        }
+        else {
+            $inject_direction = 'default';
+        }
+        if (insertEmbed($embed_section, $source_embed, $inject_direction) === false) {
+            error_log("[SVNmentions:info] $filesystem_path had unsupported webmention:inject property: $inject_direction");
+        }
     }
     $dom->saveHtmlFile($filesystem_path);
 }

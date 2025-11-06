@@ -76,6 +76,7 @@ You can customize the embedded HTML by providing templates through SVN propertie
 Note that your template will *always* be wrapped inside a `div` with an `id` attribute.
 
 #### SVN Properties Supported
+- `webmention:inject` - determines which direction to inject the template: `beginning` or `prepend`, `end` or `append`, `default` is the same as `end`/`append`
 - `webmention:default` - default template to use when no other [types](https://indieweb.org/posts#Types_of_Posts) are supported (this will show under `<div id="webmention-comments" />`)
 - `webmention:local-comment` - template for [local comments](https://indieweb.org/local_comments) (this will show under `<div id="webmention-comments" />`)
 
