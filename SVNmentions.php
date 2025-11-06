@@ -547,7 +547,7 @@ function clientMetaData(): void
 
 $issuer = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . $_SERVER['HTTP_HOST'];
 $client_id = getenv('WebmentionsClientID');
-if (isset($client_id)) {
+if ($client_id !== false) {
     $client_id = $issuer . $client_id;
     $default_metadata = false;
 }
@@ -557,23 +557,23 @@ else {
 }
 $context = json_decode(getenv('CONTEXT'), true);
 $SVNParentPath = $context['SVNParentPath'];
-if (isset($SVNParentPath) === false) {
+if ($SVNParentPath === false) {
     receiverError('Misconfigured endpoint!', 'Misconfigured endpoint: missing SVNParentPath');
 }
 $SVNLocationPath = $context['SVNLocationPath'];
-if (isset($SVNLocationPath) === false) {
+if ($SVNLocationPath === false) {
     receiverError('Misconfigured endpoint!', 'Misconfigured endpoint: missing SVNLocationPath');
 }
 $mentions_user = getenv('WebmentionUsername');
-if (isset($mentions_user) === false) {
+if ($mentions_user === false) {
     $mentions_user = 'SVNmention';
 }
 $mentions_commit = getenv('WebmentionsCommitMessage');
-if (isset($mentions_commit) === false) {
+if ($mentions_commit === false) {
     $mentions_commit = 'SVNmention received';
 }
 $mentions_property = getenv('WebmentionsAuthz');
-if (isset($mentions_commit) === false) {
+if ($mentions_commit === false) {
     $mentions_property = false;
 }
 $localcomment_limit = getenv('LocalCommentLimit');
