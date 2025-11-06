@@ -286,8 +286,14 @@ function insertEmbed($parent, array $embed): void
     $parent->append($innerEl);
 }
 
-function parseSourceMeta(string $sourceURI, string $targetURI): ?array
+function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
 {
+    if (isset($sourceURI) === false) {
+        senderError('Missing source field!', '');
+    }
+    if (strcmp($sourceURI, $targetURI) === 0) {
+        senderError('Source and target are the same!', '');
+    }
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
     $body = curl_exec($curl);
@@ -305,8 +311,35 @@ function parseSourceMeta(string $sourceURI, string $targetURI): ?array
     senderError("Source `$sourceURI` did not mention target `$targetURI`");
 }
 
-function parseSourceWebDavMeta(string $sourceURI, string $targetURI, array $arguments): ?array
+function parseLocalCommentMeta(string $targetURI, array $arguments): ?array
 {
+    global $localcomment_limit;
+    if (empty($arguments['content']) {
+        senderError("Content is empty.");
+    }
+    if (strlen($arguments['content']) > $localcomment_limit) {
+        senderError("Content exceeds $localcomment_limit characters.");
+    }
+    return [
+        'html' => '',
+        'type' => 'local-comment',
+        'variables' => [
+            '<?source:unsafe?>' => '',
+            '<?source?>' => '',
+            '<?content:unsafe?>' => $arguments['content'],
+            '<?content?>' => htmlspecialchars($arguments['content']),
+        ],
+    ];
+}
+
+function parseSourceWebDavMeta(?string $sourceURI, string $targetURI, array $arguments): ?array
+{
+    if (isset($sourceURI) === false) {
+        senderError('Missing source field!', '');
+    }
+    if (strcmp($sourceURI, $targetURI) === 0) {
+        senderError('Source and target are the same!', '');
+    }
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/xml']);
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PROPFIND'); // see http://webdav.org/specs/rfc4918.html#METHOD_PROPFIND
@@ -344,6 +377,11 @@ function getEmbed(string $filesystem_path, DOMDocument $dom, array& $meta)
     $fallback_value = '';
     $section_id = '';
     switch ($meta['type']) {
+        case 'local-comment':
+            $property_name = 'webmention:local-comment';
+            $fallback_value = '<p><?content?></p>';
+            $section_id = 'webmention-comments';
+            break;
         case 'default':
         default:
             // $sourceURI should be safe since this was queried so it must be a legitimate URI
@@ -382,11 +420,16 @@ function updateContent(string $filesystem_path, array $source_embed): void
         receiverError('Target document does not have ' . $source_embed['type'] . ' section under webmentions!');
     }
     $new_embed = true;
-    foreach ($embed_section->childNodes as $embeds) {
-        if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['variables']['<?source:unsafe?>']) === 0) {
-            $new_embed = false;
+    switch ($source_embed['type']) {
+        case 'local-comment':
             break;
-        }
+        default:
+            foreach ($embed_section->childNodes as $embeds) {
+                if ($embeds instanceof DOMElement && strcmp($embeds->getAttribute('id'), $source_embed['variables']['<?source:unsafe?>']) === 0) {
+                    $new_embed = false;
+                    break;
+                }
+            }
     }
     if ($new_embed) {
         insertEmbed($embed_section, $source_embed);
@@ -453,13 +496,13 @@ function authorizeWebMention(string $checkout_path): void
     }
 }
 
-function receiveWebMention(string $sourceURI, string $targetURI, string $mentions_type): void
+function receiveWebMention(?string $sourceURI, string $targetURI, string $mentions_type): void
 {
     try {
-        if (strcmp($sourceURI, $targetURI) === 0) {
-            senderError('Source and target are the same!', '');
-        }
         switch ($mentions_type) {
+            case 'local-comment':
+                $source_embed = parseLocalCommentMeta($targetURI, $_POST);
+                break;
             case 'webdav':
                 $source_embed = parseSourceWebDavMeta($sourceURI, $targetURI, $_POST); // also verifies source
                 break;
@@ -533,6 +576,13 @@ $mentions_property = getenv('WebmentionsAuthz');
 if (isset($mentions_commit) === false) {
     $mentions_property = false;
 }
+$localcomment_limit = getenv('LocalCommentLimit');
+if ($localcomment_limit === false) {
+    $localcomment_limit = 200;
+}
+else {
+    $localcomment_limit = (int) $localcomment_limit;
+}
 $anonymous = 'anonymous';
 if (isset($_SERVER['PHP_AUTH_USER'])) {
     $user = $_SERVER['PHP_AUTH_USER']; // TODO: how to trust this value?
@@ -543,10 +593,8 @@ else {
 
 switch ($_SERVER['REQUEST_METHOD']) {
     case 'POST':
-        if (isset($_POST['source']) === false) {
-            senderError('Missing source field!', '');
-        }
         $source = $_POST['source'];
+
         if (isset($_POST['target']) === false) {
             senderError('Missing target field!', '');
         }
