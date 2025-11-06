@@ -314,6 +314,9 @@ function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
 function parseLocalCommentMeta(string $targetURI, array $arguments): ?array
 {
     global $localcomment_limit;
+    if (empty($arguments['content']) {
+        senderError("Content is empty.");
+    }
     if (strlen($arguments['content']) > $localcomment_limit) {
         senderError("Content exceeds $localcomment_limit characters.");
     }
