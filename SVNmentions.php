@@ -605,10 +605,9 @@ $mentions_commit = getenv('WebmentionsCommitMessage');
 if ($mentions_commit === false) {
     $mentions_commit = 'SVNmention received';
 }
+
 $mentions_property = getenv('WebmentionsAuthz');
-if ($mentions_commit === false) {
-    $mentions_property = false;
-}
+
 $localcomment_limit = getenv('LocalCommentLimit');
 if ($localcomment_limit === false) {
     $localcomment_limit = 200;
@@ -618,7 +617,8 @@ else {
 }
 $anonymous = 'anonymous';
 if (isset($_SERVER['PHP_AUTH_USER'])) {
-    $user = $_SERVER['PHP_AUTH_USER']; // TODO: how to trust this value?
+    // This value is provided by and authenticated through Apache, and thus trusted as is
+    $user = $_SERVER['PHP_AUTH_USER'];
 }
 else {
     $user = '';
