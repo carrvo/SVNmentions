@@ -90,6 +90,11 @@ Alternatively you can use client features (such as with [TortoiseSVN](https://to
 - `<?content?>` - escaped [local comment](https://indieweb.org/local_comments)
 - `<?content:unsafe?>` - raw [local comment](https://indieweb.org/local_comments)
 
+The default template is
+```html
+<a href="<?source:unsafe?>" ><?source?></a><iframe src="<?source:unsafe?>" />'
+```
+
 ### Non-Standard Webmentions
 
 Alternatively you can receive **non-standard** Webmentions. This is useful for mime-types that *cannot* have the destination embedded into their file content (such as image files).
