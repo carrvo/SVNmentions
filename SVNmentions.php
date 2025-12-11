@@ -617,7 +617,8 @@ else {
 }
 $anonymous = 'anonymous';
 if (isset($_SERVER['PHP_AUTH_USER'])) {
-    $user = $_SERVER['PHP_AUTH_USER']; // TODO: how to trust this value?
+    // This value is provided by and authenticated through Apache, and thus trusted as is
+    $user = $_SERVER['PHP_AUTH_USER'];
 }
 else {
     $user = '';
