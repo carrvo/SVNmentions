@@ -74,7 +74,7 @@ These endpoints *must* be within an SVN repository and *must* reside on the same
 ### Supporting Endpoints Optional
 
 You can customize the embedded HTML by providing templates through SVN properties.
-Note that your template will *always* be wrapped inside a `div` with an `id` attribute.
+Note that your template will *always* have the `id` attribute populated internally.
 
 #### SVN Properties Supported
 - `webmention:inject` - determines which direction to inject the template: `beginning` or `prepend`, `end` or `append`, `default` is the same as `end`/`append`
