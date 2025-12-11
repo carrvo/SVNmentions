@@ -605,10 +605,9 @@ $mentions_commit = getenv('WebmentionsCommitMessage');
 if ($mentions_commit === false) {
     $mentions_commit = 'SVNmention received';
 }
+
 $mentions_property = getenv('WebmentionsAuthz');
-if ($mentions_property === false) {
-    $mentions_property = false;
-}
+
 $localcomment_limit = getenv('LocalCommentLimit');
 if ($localcomment_limit === false) {
     $localcomment_limit = 200;
