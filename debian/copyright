@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://github.com/carrvo/SVNmentions
+Upstream-Name: svnmentions
+Upstream-Contact: carrvo <carrvo@gmail.com>
+
+Files:
+ *
+Copyright: 2024 carrvo
+License: TBD
+
