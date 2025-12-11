@@ -1,0 +1,9 @@
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/svnmentions.debhelper.log
+debian/svnmentions.substvars
+debian/svnmentions/
+package/
+
+

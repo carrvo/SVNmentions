@@ -1,0 +1,26 @@
+Source: svnmentions
+Maintainer: carrvo  <carrvo@gmail.com>
+Uploaders: carrvo <carrvo@gmail.com>
+Section: httpd
+Priority: optional
+Standards-Version: 4.6.2
+Build-Depends: debhelper-compat (= 13),
+    apache2-api-20120211,
+    apache2-dev,
+    dh-apache2
+Homepage: https://github.com/carrvo/SVNmentions
+Vcs-Browser: https://github.com/carrvo/SVNmentions
+Vcs-Git: https://github.com/carrvo/SVNmentions
+
+Package: svnmentions
+Architecture: all
+Depends: ${misc:Depends},
+    php (>= 8.3),
+    php-curl,
+    php-dom,
+    subversion,
+    libapache2-mod-svn
+Suggests: svnmentions-hook
+Homepage: https://github.com/carrvo/SVNmentions
+Description: This is an endpoint to compliment mod_dav_svn
+ by adding a webmentions receiver that can update an HTML document within SVN.

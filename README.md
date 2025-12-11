@@ -13,7 +13,9 @@ Note that SVNmentions obtains direct access to the SVN repository and bypasses a
 
 Note: requires PHP 8.3+
 
-1. Run `dependencies.bash` to install dependent Ubuntu packages:
+1. Run `make debian-package-dependencies` to install dependent *build* Debian packages
+1. Run `make debian-package` to build package locally
+1. Run `dpkg -i package/SVNmentions_X.X.X_all.deb` to install package locally
     - [Apache HTTPd](https://httpd.apache.org/)
     - [mod_dav_svn](https://svnbook.red-bean.com/en/1.7/svn.ref.mod_dav_svn.conf.html)
     - [PHP](https://www.php.net/)
@@ -24,8 +26,8 @@ Note: requires PHP 8.3+
 	    DAV svn
 	    SVNParentPath </path/to/parent>
     </Location>
-    AliasMatch ^/SVNmentions$ /usr/local/src/SVNmentions/SVNmentions.php
-    <Directory "usr/local/src/SVNmentions/">
+    AliasMatch ^/SVNmentions$ /usr/src/SVNmentions/SVNmentions.php
+    <Directory "usr/src/SVNmentions/">
 	    SetEnv Context '{"SVNParentPath":"</path/to/parent>","SVNLocationPath":"</svn>"}'
         Require all granted
     </Directory>
