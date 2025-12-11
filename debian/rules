@@ -9,4 +9,4 @@ override_dh_builddeb:
 	dh_builddeb -- -Zxz
 
 %:
-	dh $@
+	dh $@ --with apache2
