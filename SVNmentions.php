@@ -289,7 +289,7 @@ function insertEmbed($parent, array $embed, string $inject_direction): bool
     $newNode = $dom->documentElement->firstElementChild->firstElementChild;
     // force the $newNode to have the expected id
     // so that subsequent comparisons can detect to prevent duplicate inserts (see updateContent)
-    $newNode.id = $embed['variables']['<?source:unsafe?>'];
+    $newNode->id = $embed['variables']['<?source:unsafe?>'];
     // grab the content (overhead added during load) then convert to destination ownerDocument
     // Credit: https://stackoverflow.com/a/34964044
     $innerEl = $parent->ownerDocument->adoptNode($newNode);
