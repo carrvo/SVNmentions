@@ -1,3 +1,9 @@
+svnmentions (2.3.4) unstable; urgency=medium
+
+  * Fix conf for #48
+
+ -- carrvo <carrvo@gmail.com>  Thu, 30 Apr 2026 11:01:49 -0600
+
 svnmentions (2.3.3) unstable; urgency=medium
 
   * Fix syntax #45 
