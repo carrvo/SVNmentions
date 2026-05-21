@@ -322,6 +322,12 @@ function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
     $body = curl_exec($curl);
     curl_close($curl);
+    $error_code = curl_errno($curl);
+    if (!$error_code) {
+        $error = curl_error($curl);
+        #$info = curl_getinfo($curl);
+        senderError("Request to source `$sourceURI` had error `$error_code $error`");
+    }
     if (preg_match('/(' . preg_quote($targetURI, '/') . ')/', $body) === 1) {
         return [
             'html' => '',
@@ -369,6 +375,12 @@ function parseSourceWebDavMeta(?string $sourceURI, string $targetURI, array $arg
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PROPFIND'); // see http://webdav.org/specs/rfc4918.html#METHOD_PROPFIND
     $body = curl_exec($curl);
     curl_close($curl);
+    $error_code = curl_errno($curl);
+    if (!$error_code) {
+        $error = curl_error($curl);
+        #$info = curl_getinfo($curl);
+        senderError("Request to source `$sourceURI` had error `$error_code $error`");
+    }
     $dom = new DOMDocument();
     $dom->formatOutput = true;
     // https://www.php.net/manual/en/libxml.constants.php
