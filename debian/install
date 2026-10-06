@@ -1,1 +1,3 @@
 SVNmentions.php /usr/src/SVNmentions/
+auth.php /usr/share/SVNmentions/
+auth/default.php /usr/share/SVNmentions/auth/

@@ -270,8 +270,6 @@ function initCurl(string $url): CurlHandle|false
     curl_setopt($curl, CURLOPT_TIMEOUT_MS, round(4 * 1000));
     curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, 2000);
     curl_setopt($curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2);
-    curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
-    curl_setopt($curl, CURLOPT_USERNAME, $client_id);
 
     $agent = getenv('WebmentionsAgent');
     if ($agent === false) {
@@ -279,7 +277,80 @@ function initCurl(string $url): CurlHandle|false
     }
     curl_setopt($curl, CURLOPT_USERAGENT, "$agent");
 
+    include "/usr/share/SVNmentions/auth.php";
+
     return $curl;
+}
+
+function execAuthCurl(CurlHandle $curl, string $url)
+{
+    global $client_id;
+
+    $body = curl_exec($curl);
+    $httpcode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    if ($httpcode !== 401) {
+        return $body;
+    }
+
+    $agent = getenv('WebmentionsAgent');
+    if ($agent === false) {
+        $agent = 'SVNmentions (https://github.com/carrvo/SVNmentions) curl/8.5.0';
+    }
+
+    $auth_type = curl_getinfo($curl, CURLINFO_HTTPAUTH_AVAIL);
+    switch (true) {
+        case ($auth_type & CURLAUTH_BEARER !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/bearer.php";
+            break;
+        case ($auth_type & CURLAUTH_DIGEST_IE !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/digest_ie.php";
+            break;
+        case ($auth_type & CURLAUTH_DIGEST !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/digest.php";
+            break;
+        case ($auth_type & CURLAUTH_NEGOTIATE !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/negotiate.php";
+            break;
+        case ($auth_type & CURLAUTH_NTLM_WB !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/ntlm_wb.php";
+            break;
+        case ($auth_type & CURLAUTH_NTLM !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/ntlm.php";
+            break;
+        case ($auth_type & CURLAUTH_GSSNEGOTIATE !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/gssnegotiate.php";
+            break;
+        case ($auth_type & CURLAUTH_GSSAPI !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/gssapi.php";
+            break;
+        case ($auth_type & CURLAUTH_AWS_SIGV4 !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/aws_sigv4.php";
+            break;
+        case ($auth_type & CURLAUTH_BASIC !== 0):
+            $auth_plugin = "/usr/share/SVNmentions/auth/basic.php";
+            break;
+        default:
+            $auth_plugin = "/usr/share/SVNmentions/auth/default.php";
+            break;
+    }
+
+    if (file_exists($auth_plugin) === true && is_dir($auth_plugin) === false) {
+        echo "[SVNmentions-hook:info] Using authentication plugin $auth_plugin"; // to be logged
+        include $auth_plugin;
+        $body = curl_exec($curl);
+    }
+    else { // fallback to default
+        $auth_plugin = "/usr/share/SVNmentions/auth/default.php";
+        if (file_exists($auth_plugin) === true && is_dir($auth_plugin) === false) {
+            echo "[SVNmentions-hook:info] Using authentication plugin $auth_plugin"; // to be logged
+            include $auth_plugin;
+            $body = curl_exec($curl);
+        }
+        else {
+            echo "[SVNmentions-hook:info] Unable to load an authentication plugin for type $auth_type"; // to be logged
+        }
+    }
+    return $body;
 }
 
 function insertEmbed($parent, array $embed, string $inject_direction): bool
@@ -320,7 +391,7 @@ function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
     }
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/html']);
-    $body = curl_exec($curl);
+    $body = execAuthCurl($curl, $sourceURI);
     curl_close($curl);
     $error_code = curl_errno($curl);
     if ($error_code !== 0) {
@@ -373,7 +444,7 @@ function parseSourceWebDavMeta(?string $sourceURI, string $targetURI, array $arg
     $curl = initCurl($sourceURI);
     curl_setopt($curl, CURLOPT_HTTPHEADER, ['Accept: text/xml']);
     curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'PROPFIND'); // see http://webdav.org/specs/rfc4918.html#METHOD_PROPFIND
-    $body = curl_exec($curl);
+    $body = execAuthCurl($curl, $sourceURI);
     curl_close($curl);
     $error_code = curl_errno($curl);
     if ($error_code !== 0) {
