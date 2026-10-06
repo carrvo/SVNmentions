@@ -1,3 +1,10 @@
+svnmentions (2.4.0) unstable; urgency=medium
+
+  * fix error code logic
+  * Enhance #52 redirect local comments back to origin
+
+ -- carrvo <carrvo@gmail.com>  Mon, 05 Oct 2026 19:17:36 -0600
+
 svnmentions (2.3.5) unstable; urgency=medium
 
   * Fix #50 response error code
