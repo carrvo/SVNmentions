@@ -323,7 +323,7 @@ function parseSourceMeta(?string $sourceURI, string $targetURI): ?array
     $body = curl_exec($curl);
     curl_close($curl);
     $error_code = curl_errno($curl);
-    if (!$error_code) {
+    if ($error_code !== 0) {
         $error = curl_error($curl);
         #$info = curl_getinfo($curl);
         senderError("Request to source `$sourceURI` had error `$error_code $error`");
@@ -376,7 +376,7 @@ function parseSourceWebDavMeta(?string $sourceURI, string $targetURI, array $arg
     $body = curl_exec($curl);
     curl_close($curl);
     $error_code = curl_errno($curl);
-    if (!$error_code) {
+    if ($error_code !== 0) {
         $error = curl_error($curl);
         #$info = curl_getinfo($curl);
         senderError("Request to source `$sourceURI` had error `$error_code $error`");
