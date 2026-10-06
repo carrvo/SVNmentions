@@ -654,6 +654,10 @@ switch ($_SERVER['REQUEST_METHOD']) {
             $mentions_type = 'standard';
         }
         receiveWebMention($source, $target, $mentions_type);
+        if ($mentions_type === 'local-comment') {
+            // Redirect the user back to the page they commented on
+            header('Location: '.$target);
+        }
         break;
     case 'GET':
         if ($default_metadata) {
